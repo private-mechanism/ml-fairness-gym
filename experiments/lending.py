@@ -50,8 +50,7 @@ class Experiment(core.Params):
   bank_starting_cash = attr.ib(default=100)
   interest_rate = attr.ib(default=1.0)
   cluster_shift_increment = attr.ib(default=0.01)
-  cluster_probabilities = attr.ib(
-      default=lending_params.DELAYED_IMPACT_CLUSTER_PROBS)
+  cluster_probabilities = attr.ib(default=lending_params.DELAYED_IMPACT_CLUSTER_PROBS)
 
   ################
   # Agent params #

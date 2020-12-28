@@ -401,6 +401,15 @@ class FairnessEnv(gym.Env):
     """
     raise NotImplementedError
 
+  def _get_features(self, observation):
+    feature_keys = 'applicant_features'
+    feature = observation.get(feature_keys)
+    return [np.argmax(feature)]
+
+  def _score_transform(self, features):
+    return [feat[0] for feat in features]
+
+
   def _get_observable_state(self):
     """Extracts observable state from `self.state`.
 

@@ -253,7 +253,7 @@ class Params(core.Params):
   # Loan constants.
   loan_amount = attr.ib(default=1.)  # type: float
   interest_rate = attr.ib(default=0.30)  # type: float
-  bank_starting_cash = attr.ib(default=1000.)  # type: float
+  bank_starting_cash = attr.ib(default=10000.)  # type: float
   max_cash = attr.ib(default=1e20)  # type: float
 
 

@@ -186,7 +186,6 @@ class BaseLendingEnv(core.FairnessEnv):
     Returns:
       A `State` object containing the updated state.
     """
-
     self._cash_updater.update(self.state, action)
     self._parameter_updater.update(self.state, action)
     self._applicant_updater.update(self.state, action)
@@ -361,3 +360,409 @@ class DelayedImpactEnv(BaseLendingEnv):
     self.observable_state_vars['applicant_features'] = multinomial.Multinomial(
         self.initial_params.applicant_distribution.dim, 1)
     self.observation_space = spaces.Dict(self.observable_state_vars)
+
+
+
+
+#####################################################################
+
+
+##############################################
+# class threshold_based_lending_env(core.FairnessEnv):
+#   #here to redefine the observation space and the action space
+#   metadata = {'render.modes': ['human']}
+#   default_param_builder = lending_params.Params
+#   group_membership_var = 'group'
+#   # _cash_updater = _CashUpdater()
+#   _parameter_updater = core.NoUpdate()
+#   # _applicant_updater = _ApplicantSampler()
+#   selection2thr=seclection_2_thr_transformer()    #用于将选取比例转化为阈值
+#
+#   def __init__(self, params=None):
+#     params = (
+#       self.default_param_builder() if params is None else params
+#     )  # type: lending_params.Params
+#
+#     # The action space of the agent is to choose two seclction rate for the two different groups
+#     # 在给定群体分布的时候决定不同群体的选取比例, 为两个[0,1]之间的浮点数
+#     self.action_space = spaces.Box(low=np.array([0.0, 0.0]), high=np.array([1.0, 1.0]), dtype=np.float32)
+#
+#     # Bank's cash is a scalar and cannot be negative.
+#     # 银行资金
+#     bank_cash_space = spaces.Box(low=0, high=params.max_cash, shape=(), dtype=np.float32)
+#
+#     # Two-dimensional observation space describes each loan applicant.
+#     #
+#     loan_applicant_space = spaces.Box(
+#       params.min_observation,
+#       params.max_observation,
+#       dtype=np.float32,
+#       shape=(params.applicant_distribution.dim,))
+#
+#     group_space = spaces.MultiBinary(params.num_groups)
+#
+#     self.observable_state_vars = {
+#       'bank_cash': bank_cash_space,
+#       'applicant_features': loan_applicant_space,
+#       'group': group_space,
+#     }
+#
+#     super(threshold_based_lending_env, self).__init__(params)
+#     self._state_init()
+#
+#   def _state_init(self, rng=None):
+#     self.state = State(
+#       # Copy in case state.params get mutated, initial_params stays pristine.
+#       params=copy.deepcopy(self.initial_params),
+#       rng=rng or np.random.RandomState(),
+#       bank_cash=self.initial_params.bank_starting_cash)
+#     self._applicant_updater.update(self.state, None)  ##############
+#
+#   def reset(self):
+#     """Resets the environment."""
+#     self._state_init(self.state.rng)
+#     # print("bank_start_cashing:", self.state.bank_cash)
+#     return super(threshold_based_lending_env, self).reset()
+#
+#   def _is_done(self):
+#     """Returns True if the bank cash is less than loan_amount."""
+#     # if name == names[0]:
+#     #   with open("./result1/" + name + "_bank_cash.txt", "a") as f:
+#     #     f.write(name + "        " + "episode:" + str(episode + 1) + "    " + str(self.state.bank_cash) + "\n")
+#     # else:
+#     #   if episode >= 3930:
+#     #     with open("./result1/" + name + "_bank_cash.txt", "a") as f:
+#     #       f.write(name + "        " + "episode:" + str(episode + 1) + "    " + str(self.state.bank_cash) + "\n")
+#     # # print("bank_cash:", self.state.bank_cash)
+#     return self.state.bank_cash < self.state.params.loan_amount
+#
+#
+# ########################这里需要大改，因为action空间变了，所以所有的update都给要更改
+#   def _step_impl(self, state, action):
+#     """Run one timestep of the environment's dynamics.
+#
+#     In a single step, the agent decides whether to accept or reject an application.
+#
+#     The potential payoffs of rejected application are always 0.
+#     If an application is accepted, the payoffs are:
+#       -loan_amount if the applicant defaults.
+#       +loan_amount*interest_rate if the applicant successfully pays back.
+#     被拒绝的申请人的潜在回报总是0。
+#     如果申请被接纳，回报是: -贷款金额(如果申请人违约)；+贷款金额*利率(如果申请人成功偿还)。
+#
+#     Args:
+#       state: A `State` object containing the current state.
+#       action: An action in `action_space`.
+#
+#     Returns:
+#       A `State` object containing the updated state.
+#     """
+#
+#     def applicant_update(state, action):
+#       del action  # Unused.
+#       params = state.params
+#       new_applicant = params.applicant_distribution.sample(state.rng)
+#       # state.applicant_features = np.clip(new_applicant.features,
+#       #                                    params.min_observation,
+#       #                                    params.max_observation)
+#       # state.group = new_applicant.group
+#       # state.group_id = np.argmax(new_applicant.group)
+#       # state.will_default = new_applicant.will_default
+#       return new_applicant
+#
+#     def state_update(state, action):
+#       #记录初始的bankcash
+#       reward_pre=state.bank_cash
+#       for i in range(50):
+#         params = state.params
+#         # 第一步：采一个申请人
+#         new_applicant = applicant_update(state, action)
+#         # 第二步：根据threshold决策是否给予贷款，如果给予贷款且未归还，则bankcash-1;若未给予贷款，则不用管
+#         if new_applicant.features > thr_list[new_applicant.group_id]:
+#           if new_applicant.will_default:
+#             state.bank_cash -= params.loan_amount
+#             ##更新信用分布??????
+#           else:
+#             state.bank_cash += params.loan_amount * params.interest_rate
+#             ##更新信用分布??????
+#       #最终的bankcash-初始的bankcash=reward
+#       reward = state.bank_cash-reward_pre
+#       return state, reward
+#     self.state, reward=state_update(self.state, action)
+#       # self._parameter_updater.update(self.state, action)
+#       # self._applicant_updater.update(self.state, action)
+#     return self.state, reward
+#
+#   def render(self, mode='human'):
+#     """Renders the history and current state using matplotlib.
+#
+#     Args:
+#       mode: string indicating the rendering mode. The only supported mode is
+#         `human`.
+#     """
+#     if mode == 'human':
+#       if self.state.params.applicant_distribution.dim != 2:
+#         raise NotImplementedError(
+#           'Cannot render if applicant features are not exactly 2 dimensional. '
+#           'Got %d dimensional applicant features.' %
+#           self.state.params.applicant_distribution.dim)
+#
+#       plt.figure(figsize=(12, 4))
+#       plt.subplot(1, 2, 1)
+#       plt.xlim(-2, 2)
+#       plt.ylim(-2, 2)
+#       plt.title('Applicant Features')
+#       plt.xticks([], [])
+#       plt.yticks([], [])
+#       for state, action in self.history:
+#         if action == 1:
+#           x, y = state.applicant_features
+#           color = 'r' if state.will_default else 'b'
+#           plt.plot([x], [y], _MARKERS[state.group_id] + color, markersize=12)
+#       plt.xlabel('Feature 1')
+#       plt.ylabel('Feature 2')
+#
+#       x, y = self.state.applicant_features
+#
+#       plt.plot([x], [y], _MARKERS[self.state.group_id] + 'k', markersize=15)
+#
+#       plt.subplot(1, 2, 2)
+#       plt.title('Cash')
+#       plt.plot([state.bank_cash for state, _ in self.history] +
+#                [self.state.bank_cash])
+#       plt.ylabel('# loans available')
+#       plt.xlabel('Time')
+#       plt.tight_layout()
+#     else:
+#       super(seclection_rate_based_lending_env, self).render(mode)  # Raises NotImplementedError
+#
+#
+
+######################最终需要的环境
+class selection_2_thr_transformer():
+  def cumulative(self,list):
+    List=[]
+    List.append(list[0])
+    for i in range(len(list)-1):
+      List.append(list[i+1]+List[i])
+    return List
+################将selection rate转化为threshold
+  def transform(self, applicant_distribution, selection_rate, score_list):
+    _cumulative_distribution=self.cumulative(applicant_distribution)
+    for i in range(len(_cumulative_distribution)):
+      if _cumulative_distribution[i]<(1-selection_rate) and _cumulative_distribution[i+1]>(1-selection_rate):
+        return score_list[i]+(1-selection_rate-_cumulative_distribution[i])/(_cumulative_distribution[i+1]-_cumulative_distribution[i])
+      else:
+        print("error from the darling!")
+###############将不同群体的selection rate（也就是action）转化为threshold (thr1, thr2)
+  def transform_all(self,state, action, score_list):
+    ###########这里需要把state里面的applicant_distribution提取出来[[applicant_distribution1],[applicant_distribution2]],然后把action的两个坐标值转化为列表[坐标1，坐标2]
+    applicant_distribution_list=tolist(state.params.applicant_distribution)
+    selection_rate_list=tolist(action)
+    ################################################
+    thr1=self.transform(applicant_distribution_list[0], selection_rate_list[0], score_list)
+    thr2=self.transform(applicant_distribution_list[1], selection_rate_list[1], score_list)
+    thr_list = [thr1, thr2]
+    return thr_list
+
+
+
+class seclection_rate_based_lending_env(core.FairnessEnv):
+  #here to redefine the observation space and the action space
+  metadata = {'render.modes': ['human']}
+  default_param_builder = lending_params.Params
+  group_membership_var = 'group'
+  # _cash_updater = _CashUpdater()
+  _parameter_updater = _CreditShift()
+  # _applicant_updater = _ApplicantSampler()
+  selection2thr=selection_2_thr_transformer()    #用于将选取比例转化为阈值
+
+  def __init__(self, params=None):
+    params = (
+      self.default_param_builder() if params is None else params
+    )  # type: lending_params.Params
+
+    # The action space of the agent is to choose two seclction rate for the two different groups
+    # 在给定群体分布的时候决定不同群体的选取比例, 为两个[0,1]之间的浮点数
+    self.action_space = spaces.Box(low=np.array([0.0, 0.0]), high=np.array([1.0, 1.0]), dtype=np.float32)
+
+    # Bank's cash is a scalar and cannot be negative.
+    # 银行资金
+    bank_cash_space = spaces.Box(low=0, high=params.max_cash, shape=(), dtype=np.float32)
+    # ????????
+    applicant_distribution_space = spaces.Dict(self.initial_params.applicant_distribution)
+
+
+    self.observable_state_vars = {
+      'bank_cash': bank_cash_space,
+      'applicant_distribution': applicant_distribution_space,
+      # 'group': group_space,
+    }
+
+    super(seclection_rate_based_lending_env, self).__init__(params)
+    self._state_init()
+
+  def _state_init(self, rng=None):
+    self.state = State(
+      # Copy in case state.params get mutated, initial_params stays pristine.
+      params=copy.deepcopy(self.initial_params),
+      rng=rng or np.random.RandomState(),
+      bank_cash=self.initial_params.bank_starting_cash)
+    # self._applicant_updater.update(self.state, None)  ##############
+
+  def reset(self):
+    """Resets the environment."""
+    self._state_init(self.state.rng)
+    # print("bank_start_cashing:", self.state.bank_cash)
+    return super(seclection_rate_based_lending_env, self).reset()
+
+  def _is_done(self):
+    """Returns True if the bank cash is less than loan_amount."""
+    # if name == names[0]:
+    #   with open("./result1/" + name + "_bank_cash.txt", "a") as f:
+    #     f.write(name + "        " + "episode:" + str(episode + 1) + "    " + str(self.state.bank_cash) + "\n")
+    # else:
+    #   if episode >= 3930:
+    #     with open("./result1/" + name + "_bank_cash.txt", "a") as f:
+    #       f.write(name + "        " + "episode:" + str(episode + 1) + "    " + str(self.state.bank_cash) + "\n")
+    # # print("bank_cash:", self.state.bank_cash)
+    return self.state.bank_cash < self.state.params.loan_amount
+
+########################这里需要大改，因为action空间变了，所以所有的update都要更改
+  def _step_impl(self, state, action):
+    """Run one timestep of the environment's dynamics.
+
+    In a single step, the agent decides whether to accept or reject an application.
+
+    The potential payoffs of rejected application are always 0.
+    If an application is accepted, the payoffs are:
+      -loan_amount if the applicant defaults.
+      +loan_amount*interest_rate if the applicant successfully pays back.
+    Args:
+      state: A `State` object containing the current state.
+      action: An action in `action_space`.
+
+    Returns:
+      A `State` object containing the updated state.
+    """
+    def applicant_update(state, action):
+      del action  # Unused.
+      params = state.params
+      new_applicant = params.applicant_distribution.sample(state.rng)
+      # state.applicant_features = np.clip(new_applicant.features,
+      #                                    params.min_observation,
+      #                                    params.max_observation)
+      # state.group = new_applicant.group
+      # state.group_id = np.argmax(new_applicant.group)
+      # state.will_default = new_applicant.will_default
+      return new_applicant
+
+    def state_update(state, action):
+      #记录初始的bankcash
+      reward_pre=state.bank_cash
+      for i in range(50):
+        params = state.params
+        # 第一步：采一个申请人
+        new_applicant = applicant_update(state, action)
+        features = self._get_features(new_applicant)
+        score = self._score_transform([features])[0]
+
+        thr_list=params.applicant_distribution
+        #####？？？？？？？？？？？？？？？？？？
+
+        # 第二步：根据threshold决策是否给予贷款，如果给予贷款且未归还，则bankcash-1;若未给予贷款，则不用管
+        if score > thr_list[np.argmax(new_applicant.group)]:
+          if new_applicant.will_default:
+            state.bank_cash -= params.loan_amount
+            self._parameter_updater.update(self.state, 1)
+            ##更新信用分布??????
+          else:
+            state.bank_cash += params.loan_amount * params.interest_rate
+            self._parameter_updater.update(state, 1)
+            ##更新信用分布??????
+      #最终的bankcash-初始的bankcash=reward
+      reward = state.bank_cash-reward_pre
+      return state, reward
+    self.state, reward=state_update(self.state, action)
+      # self._parameter_updater.update(self.state, action)
+      # self._applicant_updater.update(self.state, action)
+    return self.state, reward
+
+
+#################################张瑞代码#######################################
+  # def step(self, action, observation, step, name, names, episode):
+  #   threshold_policy = self.policies[action]
+  #   if name == names[0]:
+  #     with open("./result1/" + name + "_threshold_policy.txt", "a") as f:
+  #       f.write("step:" + str(step+1) + "     " + str(threshold_policy) + "\n")
+  #   groups = [(0., 1.), (1., 0.)]
+  #   # 把阈值策略转换为dict
+  #   Threshold_Policy = {}
+  #   for i, group in enumerate(groups):
+  #     alpha = self._interpolate(threshold_policy[i], int(threshold_policy[i]), int(threshold_policy[i] + 1))
+  #     thr = RandomizedThreshold(
+  #       weights=[alpha, 1 - alpha],
+  #       values=[int(threshold_policy[i]), int(threshold_policy[i]) + 1 if (int(threshold_policy[i]) + 1 <= 6) else 6])
+  #     Threshold_Policy[group] = thr
+  #   self.group_specific_thresholds = Threshold_Policy
+  #
+  #   group_key = "group"
+  #   reward_50 = 0
+  #   for _ in range(50):
+  #     group_id = observation.get(group_key)
+  #     if group_id is not None:
+  #       group_id = tuple(group_id)
+  #     features = self._get_features(observation)
+  #     score = self._score_transform([features])[0]
+  #     act_01 = int(score >= self._get_threshold(group_id))
+  #     self.state, reward_one = self._step_impl(self.state, act_01)
+  #     reward_50 += reward_one
+  #     applicant_distribution_NEW = list(self.state.params.applicant_distribution.components[0].weights)
+  #     applicant_distribution_NEW.extend(list(self.state.params.applicant_distribution.components[1].weights))
+  #     applicant_distribution_new = np.expand_dims(np.expand_dims(applicant_distribution_NEW, axis=0), axis=0).astype(np.float32)
+  #     observation = self._get_observable_state()
+  #   done = self._is_done(episode, name, names)
+  #   return applicant_distribution_new[0][0], reward_50, done, {}
+
+  def render(self, mode='human'):
+    """Renders the history and current state using matplotlib.
+
+    Args:
+      mode: string indicating the rendering mode. The only supported mode is
+        `human`.
+    """
+    if mode == 'human':
+      if self.state.params.applicant_distribution.dim != 2:
+        raise NotImplementedError(
+          'Cannot render if applicant features are not exactly 2 dimensional. '
+          'Got %d dimensional applicant features.' %
+          self.state.params.applicant_distribution.dim)
+
+      plt.figure(figsize=(12, 4))
+      plt.subplot(1, 2, 1)
+      plt.xlim(-2, 2)
+      plt.ylim(-2, 2)
+      plt.title('Applicant Features')
+      plt.xticks([], [])
+      plt.yticks([], [])
+      for state, action in self.history:
+        if action == 1:
+          x, y = state.applicant_features
+          color = 'r' if state.will_default else 'b'
+          plt.plot([x], [y], _MARKERS[state.group_id] + color, markersize=12)
+      plt.xlabel('Feature 1')
+      plt.ylabel('Feature 2')
+
+      x, y = self.state.applicant_features
+
+      plt.plot([x], [y], _MARKERS[self.state.group_id] + 'k', markersize=15)
+
+      plt.subplot(1, 2, 2)
+      plt.title('Cash')
+      plt.plot([state.bank_cash for state, _ in self.history] +
+               [self.state.bank_cash])
+      plt.ylabel('# loans available')
+      plt.xlabel('Time')
+      plt.tight_layout()
+    else:
+      super(seclection_rate_based_lending_env, self).render(mode)  # Raises NotImplementedError
