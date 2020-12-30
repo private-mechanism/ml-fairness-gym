@@ -321,7 +321,7 @@ class FairnessEnv(gym.Env):
       raise gym.error.InvalidAction('Invalid action: %s' % action)
 
     self._update_history(self.state, action)
-    self.state = self._step_impl(self.state, action)
+    self.state, reward = self._step_impl(self.state, action)
     observation = self._get_observable_state()
 
     logging.debug('Observation: %s.', observation)
@@ -333,7 +333,7 @@ class FairnessEnv(gym.Env):
 
     # TODO(): Remove this completely.
     # For compatibility, compute a reward_fn if one is given.
-    reward = self.reward_fn(observation) if self.reward_fn is not None else 0
+    # reward = self.reward_fn(observation) if self.reward_fn is not None else 0
     return observation, reward, self._is_done(), {}
 
   def seed(self, seed = None):

@@ -167,10 +167,8 @@ class ScoringAgent(core.Agent):
   global_threshold = attr.ib(default=0.)
   group_specific_thresholds = attr.ib(factory=dict)
   global_threshold_history = attr.ib(factory=list)
-  group_specific_threshold_history = attr.ib(
-      factory=lambda: collections.defaultdict(list))
-  target_recall_history = attr.ib(
-      factory=lambda: collections.defaultdict(list))
+  group_specific_threshold_history = attr.ib(factory=lambda: collections.defaultdict(list))
+  target_recall_history = attr.ib(factory=lambda: collections.defaultdict(list))
 
   _step = attr.ib(default=0)
   _last_action = attr.ib(default=None)

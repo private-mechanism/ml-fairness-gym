@@ -96,7 +96,7 @@ class Experiment(core.Params):
     agent = oracle_lending_agent.OracleThresholdAgent(
         action_space=env.action_space,
         reward_fn=rewards.BinarizedScalarDeltaReward(
-            'bank_cash', baseline=env.initial_params.bank_starting_cash),
+            'bank_cash', baseline=env.bank_starting_cash),
         observation_space=env.observation_space,
         params=agent_params,
         env=env)

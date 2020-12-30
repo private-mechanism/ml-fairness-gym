@@ -260,7 +260,6 @@ class Params(core.Params):
 @attr.s
 class DifferentialExpressionParams(Params):
   """Parameter class for the DifferentialExpressionEnv environment."""
-
   num_groups = attr.ib(default=2)  # type: int
   applicant_distribution = attr.ib(
       factory=_rotated_gmm_applicant_builder(
@@ -281,10 +280,10 @@ class DelayedImpactParams(Params):
   applicant_distribution = attr.ib(
       factory=two_group_credit_clusters)  # type: distributions.Distribution
   num_groups = attr.ib(default=2)  # type: int
-
   min_observation = attr.ib(default=0)  # type: float
   max_observation = attr.ib(default=1)  # type: float
-
+  max_cash = attr.ib(default=1000000000000)
   # Probability mass that shifts away from a cluster due to a raise or
   # lowering of credit score in response to an accepted application.
-  cluster_shift_increment = attr.ib(default=0.01)  # type: float
+  cluster_shift_increment = attr.ib(default=0.001)  # type: float
+  max_step=attr.ib(default=800)  # type: int
