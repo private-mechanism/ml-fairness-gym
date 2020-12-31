@@ -380,11 +380,11 @@ class selection_2_thr_transformer(core.StateUpdater):
             return 6.0-6*(selection_rate)
         else:
             if (1 - selection_rate) < _cumulative_distribution[0]:
-              return np.random.random()>((1 - selection_rate) / _cumulative_distribution[0])
+              return int(np.random.random()<((1 - selection_rate) / _cumulative_distribution[0]))
             else:
               for i in range(len(_cumulative_distribution)):
                   if not(_cumulative_distribution[i] > (1 - selection_rate) or _cumulative_distribution[i + 1] < (1 - selection_rate)):
-                      return score_list[i]+ np.random.random()>((1 - selection_rate - _cumulative_distribution[i]) / (_cumulative_distribution[i + 1] - _cumulative_distribution[i]))
+                      return score_list[i]+ int(np.random.random()<((1 - selection_rate - _cumulative_distribution[i])/ (_cumulative_distribution[i + 1] - _cumulative_distribution[i])))
                   else:
                       pass
 
@@ -631,6 +631,7 @@ class dp_selection_rate_based_lending_env(core.FairnessEnv):
   ########################这里需要大改，因为action空间变了，所以所有的update都要更改
   def _step_impl(self, state, action):
     thr_list = self.selection2thr.transform_2_thr(state, action)
+    # print('thr_list:',action,thr_list)
     reward = 0
     for _ in range(50):
       self._applicant_updater.update(self.state, action)
@@ -742,7 +743,7 @@ class thr_rate_based_lending_env(core.FairnessEnv):
                 policies.append([i, j])
         thr_list = policies[action]
         #############################随机threshold
-        thr_list=[int(thr)+np.random.random()>(thr-int(thr)) for thr in thr_list]
+        thr_list=[int(thr)+int(np.random.random()<(thr-int(thr))) for thr in thr_list]
         # thr_list = self.selection2thr.transform_2_thr(state, action)
         reward = 0
         # reward_pre = state.bank_cash

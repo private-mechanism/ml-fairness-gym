@@ -44,8 +44,8 @@ parser.add_argument("--stop-reward", type=float, default=10000000000)
 
 
 class selection_DelayedImpactEnv(Wrapper):
-  def __init__(self, dp_selection_rate_based_lending_env):
-    super(selection_DelayedImpactEnv, self).__init__(dp_selection_rate_based_lending_env)
+  def __init__(self, selection_rate_based_lending_env):
+    super(selection_DelayedImpactEnv, self).__init__(selection_rate_based_lending_env)
     self.observation_space = Dict(self.observable_state_vars)
 
   def _get_observable_state(self):
@@ -56,7 +56,7 @@ class selection_DelayedImpactEnv(Wrapper):
     }
 
 def env_creator(env_config):
-    env=dp_selection_rate_based_lending_env()
+    env=selection_rate_based_lending_env()
     env = selection_DelayedImpactEnv(env)
     return env
 
