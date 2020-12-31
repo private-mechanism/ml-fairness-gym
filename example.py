@@ -11,7 +11,7 @@ from gym.spaces import Discrete, Box, Dict,Tuple
 from gym import Wrapper
 import numpy as np
 import os
-from environments.lending import selection_rate_based_lending_env, thr_rate_based_lending_env,State
+from environments.lending import selection_rate_based_lending_env, thr_rate_based_lending_env,State,dp_selection_rate_based_lending_env
 from environments import lending_params
 from experiments import lending
 import spaces
@@ -44,8 +44,8 @@ parser.add_argument("--stop-reward", type=float, default=10000000000)
 
 
 class selection_DelayedImpactEnv(Wrapper):
-  def __init__(self, thr_rate_based_lending_env):
-    super(selection_DelayedImpactEnv, self).__init__(thr_rate_based_lending_env)
+  def __init__(self, dp_selection_rate_based_lending_env):
+    super(selection_DelayedImpactEnv, self).__init__(dp_selection_rate_based_lending_env)
     self.observation_space = Dict(self.observable_state_vars)
 
   def _get_observable_state(self):
@@ -56,7 +56,7 @@ class selection_DelayedImpactEnv(Wrapper):
     }
 
 def env_creator(env_config):
-    env=thr_rate_based_lending_env()
+    env=dp_selection_rate_based_lending_env()
     env = selection_DelayedImpactEnv(env)
     return env
 
@@ -64,7 +64,7 @@ class CustomModel(TFModelV2,selection_DelayedImpactEnv):
     """Example of a keras custom model that just delegates to an fc-net."""
     obs_space=selection_DelayedImpactEnv.observation_space
     action_space=selection_DelayedImpactEnv.action_space
-    num_outputs=441
+    # num_outputs=169
     model_config={}
     name='My_model'
     def __init__(self, obs_space, action_space, num_outputs, model_config, name):
