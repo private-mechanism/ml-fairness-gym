@@ -631,6 +631,7 @@ class dp_selection_rate_based_lending_env(core.FairnessEnv):
   ########################这里需要大改，因为action空间变了，所以所有的update都要更改
   def _step_impl(self, state, action):
     thr_list = self.selection2thr.transform_2_thr(state, action)
+    # print(thr_list)
     # print('thr_list:',action,thr_list)
     reward = 0
     for _ in range(50):
@@ -742,8 +743,10 @@ class thr_rate_based_lending_env(core.FairnessEnv):
             for j in thr:
                 policies.append([i, j])
         thr_list = policies[action]
+        print('pre_thr_list:',thr_list)
         #############################随机threshold
         thr_list=[int(thr)+int(np.random.random()<(thr-int(thr))) for thr in thr_list]
+        print('post_thr_list:',thr_list)
         # thr_list = self.selection2thr.transform_2_thr(state, action)
         reward = 0
         # reward_pre = state.bank_cash

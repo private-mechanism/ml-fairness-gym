@@ -35,7 +35,7 @@ tf1, tf, tfv = try_import_tf()
 torch, nn = try_import_torch()
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--run", type=str, default="A3C")
+parser.add_argument("--run", type=str, default="PPO")
 parser.add_argument("--torch", action="store_true")
 parser.add_argument("--as-test", action="store_true")
 parser.add_argument("--stop-iters", type=int, default=500)
