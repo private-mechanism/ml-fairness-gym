@@ -414,7 +414,7 @@ class NotInitializedError(Exception):
 class selection_rate_based_lending_env(core.FairnessEnv):
     # here to redefine the observation space and the action space
     policies=[]
-    selection_rate=[i/20 for i in range(21)]
+    selection_rate=[i/50 for i in range(51)]
     for i in selection_rate:
       for j in selection_rate:
         policies.append([i,j])
@@ -430,7 +430,7 @@ class selection_rate_based_lending_env(core.FairnessEnv):
         params = (
             self.default_param_builder() if params is None else params
         )  # type: lending_params.Params
-        self.action_space = spaces.Discrete(21 * 21, )
+        self.action_space = spaces.Discrete(51 * 51, )
         applicant_distribution_space = spaces.Box(low=0, high=1.0, dtype=np.float32, shape=(14,))
 
         self.observable_state_vars = {
@@ -588,7 +588,7 @@ class selection_rate_based_lending_env(core.FairnessEnv):
 
 class dp_selection_rate_based_lending_env(core.FairnessEnv):
   policies = []
-  selection_rate = [i / 20 for i in range(21)]
+  selection_rate = [i / 50 for i in range(51)]
   for i in selection_rate:
       policies.append([i,i])
   metadata = {'render.modes': ['human']}
@@ -603,7 +603,7 @@ class dp_selection_rate_based_lending_env(core.FairnessEnv):
     params = (
       self.default_param_builder() if params is None else params
     )  # type: lending_params.Params
-    self.action_space = spaces.Discrete(21, )
+    self.action_space = spaces.Discrete(51, )
     applicant_distribution_space = spaces.Box(low=0, high=1.0, dtype=np.float32, shape=(14,))
 
     self.observable_state_vars = {
