@@ -197,10 +197,8 @@ ParamsType = TypeVar('ParamsType', bound=Params)
 
 class RewardFn(object):
   """Base reward function.
-
   A reward function describes how to extract a scalar reward from state or
   changes in state.
-
   Subclasses should override the __call__ function.
   """
 
@@ -231,13 +229,10 @@ class NoUpdate(StateUpdater):
 
 class FairnessEnv(gym.Env):
   """ML-fairness-gym Environment.
-
   An ML-fairness-gym environment is an environment that additionally reports to
   an oracle that can determine the potential outcomes for each action that the
   agent takes.
-
   The main API methods that users of this class need to know are:
-
   Inherited from gym.Env (see gym/core.py for more documentation):
       step
       reset
@@ -245,15 +240,12 @@ class FairnessEnv(gym.Env):
       close
       seed
   # TODO(): Add methods to save/restore state.
-
   Extends gym.Env:
       set_scalar_reward: Allows an agent to specify how the environment should
         translate state or changes in state to a scalar reward.
-
   Observations returned immediately after reset (initial observations) may not
   be in the observation space. They can be used to establish some prior.
   Subsequent observations are checked at each step to ensure they are contained.
-
   When implementing a FairnessEnv, override `_step_impl` instead of overriding
   the `step` method.
   """
@@ -290,14 +282,11 @@ class FairnessEnv(gym.Env):
       self,
       action):
     """Run one timestep of the environment's dynamics.
-
     This is part of the openAI gym interface and should not be overridden.
     When writing a new ML fairness gym environment, users should override the
     `_step_impl` method.
-
     Args:
         action: An action provided by the agent. A member of `action_space`.
-
     Returns:
         observation: Agent's observation of the current environment. A member
           of `observation_space`.
@@ -306,7 +295,6 @@ class FairnessEnv(gym.Env):
         done: Whether the episode has ended, in which case further step() calls
           will return undefined results.
         info: A dictionary with auxiliary diagnostic information.
-
     Raises:
       NotInitializedError: If called before first reset().
       gym.error.InvalidAction: If `action` is not in `self.action_space`.
@@ -321,7 +309,7 @@ class FairnessEnv(gym.Env):
       raise gym.error.InvalidAction('Invalid action: %s' % action)
 
     self._update_history(self.state, action)
-    self.state, reward = self._step_impl(self.state, action)
+    self.state = self._step_impl(self.state, action)
     observation = self._get_observable_state()
 
     logging.debug('Observation: %s.', observation)
@@ -333,7 +321,7 @@ class FairnessEnv(gym.Env):
 
     # TODO(): Remove this completely.
     # For compatibility, compute a reward_fn if one is given.
-    # reward = self.reward_fn(observation) if self.reward_fn is not None else 0
+    reward = self.reward_fn(observation) if self.reward_fn is not None else 0
     return observation, reward, self._is_done(), {}
 
   def seed(self, seed = None):
@@ -344,7 +332,6 @@ class FairnessEnv(gym.Env):
 
   def reset(self):
     """Resets the state of the environment and returns an initial observation.
-
     Returns:
       observation: The observable features for the first interaction.
     """
@@ -354,12 +341,10 @@ class FairnessEnv(gym.Env):
   # TODO(): Remove this.
   def set_scalar_reward(self, reward_fn):
     """Sets the environment's reward_fn.
-
     `reward_fn` describes how to extract a scalar reward from the environment's
     state or changes in state.
     The agent interacting with the environment is expected to call this function
     if it intends to use the environment's reward response.
-
     Args:
       reward_fn: A `RewardFn` object.
     """
@@ -367,7 +352,6 @@ class FairnessEnv(gym.Env):
 
   def serialize_history(self):
     """Serialize history to JSON.
-
     Returns:
       A string containing a serialized JSON representation of the environment's
       history.
@@ -389,30 +373,17 @@ class FairnessEnv(gym.Env):
 
   def _step_impl(self, state, action):
     """Run one timestep of the environment's dynamics.
-
     This should be implemented when creating a new enviornment.
-
     Args:
         state: A `State` object.
         action: An action provided by the agent. A member of `action_space`.
-
     Returns:
         An updated `State` object.
     """
     raise NotImplementedError
 
-  def _get_features(self, observation):
-    feature_keys = 'applicant_features'
-    feature = observation.get(feature_keys)
-    return [np.argmax(feature)]
-
-  def _score_transform(self, features):
-    return [feat[0] for feat in features]
-
-
   def _get_observable_state(self):
     """Extracts observable state from `self.state`.
-
     Returns:
       A dictionary mapping variable name to a numpy array with that variable's
       value.
@@ -465,12 +436,9 @@ class FairnessEnv(gym.Env):
 
 class Metric(object):
   """Base metric class.
-
   A metric processes the history of interactions between an agent and an
   environment and evaluates some measure of fairness of those interactions.
-
   The main API methods that users of this class need to know is:
-
       measure: Takes a FairnessEnv as input and outputs an measure report. The
         type of the measure report is not specified in the base class, but may
         be specified for subclasses.
@@ -487,11 +455,9 @@ class Metric(object):
 
   def _simulate(self, state, action):
     """Simulates the effect of `action` on `state`.
-
     Args:
       state: A `State` object.
       action: An action that is in the action space of `self.environment`.
-
     Returns:
       A new state.
     """
@@ -502,10 +468,8 @@ class Metric(object):
 
   def _validate_history(self, history):
     """Checks that a history can be replayed using the metric's simulation.
-
     Args:
       history: an iterable of (state, action) pairs.
-
     Raises:
       ValueError if the metric's simulation and the history do not match.
     """
@@ -532,18 +496,14 @@ class Metric(object):
 
 class Agent(object):
   """Base Agent class.
-
   The main API methods that users of this class need to know is:
-
       act: Takes (observation, reward, done) from the environment and returns
         an action in the action space of the environment.
-
   """
 
   def __init__(self, action_space, reward_fn,
                observation_space):
     """Initializes an Agent.
-
     Args:
       action_space: a `gym.Space` that contains valid actions.
       reward_fn: a `RewardFn` object.
@@ -561,10 +521,8 @@ class Agent(object):
   # TODO(): Find a better type for observations than Any.
   def act(self, observation, done):
     """Returns an action in the action_space specified in the constructor.
-
     Do not override this method. When implementing act for a child class,
     override the _act_impl method instead.
-
     Args:
       observation: An observation in `self.observation_space`.
       done: Boolean indicating whether the simulation has terminated.
@@ -575,11 +533,9 @@ class Agent(object):
   # TODO(): Find a better type for observations than Any.
   def _act_impl(self, observation, reward, done):
     """The implementation of the agent's act method.
-
     This should be overridden by any class inheriting from Agent. When calling
     this function, the agent has already replaced the environment's reward
     value with its own.
-
     Args:
       observation: An observation in `self.observation_space`.
       reward: A scalar reward function that the agent has computed from
@@ -591,10 +547,8 @@ class Agent(object):
   # TODO(): Find a better type for observations than Any.
   def flatten_features(self, observation):
     """Flattens observation in `observation_space` into a vector for training.
-
     Args:
      observation: An observation in `observation_space`.
-
     Returns:
      A 1-d numpy array containing the values from the observation.
     """

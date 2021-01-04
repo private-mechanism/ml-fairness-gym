@@ -47,9 +47,9 @@ class Experiment(core.Params):
   ######################
 
   group_0_prob = attr.ib(default=0.5)
-  bank_starting_cash = attr.ib(default=100)
+  bank_starting_cash = attr.ib(default=1000)
   interest_rate = attr.ib(default=1.0)
-  cluster_shift_increment = attr.ib(default=0.01)
+  cluster_shift_increment = attr.ib(default=0.001)
   cluster_probabilities = attr.ib(default=lending_params.DELAYED_IMPACT_CLUSTER_PROBS)
 
   ################
@@ -96,7 +96,7 @@ class Experiment(core.Params):
     agent = oracle_lending_agent.OracleThresholdAgent(
         action_space=env.action_space,
         reward_fn=rewards.BinarizedScalarDeltaReward(
-            'bank_cash', baseline=env.bank_starting_cash),
+            'bank_cash', baseline=env.initial_params.bank_starting_cash),
         observation_space=env.observation_space,
         params=agent_params,
         env=env)

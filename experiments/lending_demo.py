@@ -34,7 +34,7 @@ flags.DEFINE_string('outfile', None, 'Path to write out results.')
 flags.DEFINE_string('plots_directory', None, 'Directory to write out plots.')
 flags.DEFINE_bool('equalize_opportunity', False,
                   'If true, apply equality of opportunity constraints.')
-flags.DEFINE_integer('num_steps', 10000,
+flags.DEFINE_integer('num_steps', 40000,
                      'Number of steps to run the simulation.')
 
 FLAGS = flags.FLAGS
@@ -59,7 +59,7 @@ def main(argv):
       seed=200,
       num_steps=FLAGS.num_steps,
       burnin=200,
-      cluster_shift_increment=0.01,
+      cluster_shift_increment=0.001,
       include_cumulative_loans=True,
       return_json=False,
       threshold_policy=(EQUALIZE_OPPORTUNITY if FLAGS.equalize_opportunity else

@@ -155,7 +155,8 @@ class BaseLendingEnv(core.FairnessEnv):
             # Copy in case state.params get mutated, initial_params stays pristine.
             params=copy.deepcopy(self.initial_params),
             rng=rng or np.random.RandomState(),
-            bank_cash=self.initial_params.bank_starting_cash)
+            bank_cash=self.initial_params.bank_starting_cash,
+        current_step=0)
         self._applicant_updater.update(self.state, None)
 
     def reset(self):
@@ -188,6 +189,8 @@ class BaseLendingEnv(core.FairnessEnv):
         self._cash_updater.update(self.state, action)
         self._parameter_updater.update(self.state, action)
         self._applicant_updater.update(self.state, action)
+        if self.state.current_step==40000:
+            print('bank_cash',self.state.bank_cash)
         return self.state
 
     def render(self, mode='human'):
@@ -398,6 +401,7 @@ class selection_2_thr_transformer(core.StateUpdater):
         applicant_distribution_list = [list(state.params.applicant_distribution.components[0].weights),
                                        list(state.params.applicant_distribution.components[1].weights)]
         selection_rate_list = self.policies[action]
+        # print(selection_rate_list)
         ################################################
         thr1 = self.transform(applicant_distribution_list[0], selection_rate_list[0], score_list)
         thr2 = self.transform(applicant_distribution_list[1], selection_rate_list[1], score_list)
@@ -484,6 +488,7 @@ class selection_rate_based_lending_env(core.FairnessEnv):
         self.state.current_step += 1
         if self.state.current_step == self.initial_params.max_step:
             print('bank_cash', self.state.current_step, self.state.bank_cash)
+        print('reward：',reward)
         return self.state, reward
 
     def step(self, action):
@@ -508,6 +513,9 @@ class selection_rate_based_lending_env(core.FairnessEnv):
             observation
         ), 'Observation %s is not contained in self.observation_space' % observation
         return observation, reward, self._is_done(), {}
+
+    def _score_transform(self, features):
+        return [feat[0] for feat in features]
 
     def _get_features(self, observation):
         del observation
@@ -620,6 +628,9 @@ class dp_selection_rate_based_lending_env(core.FairnessEnv):
       current_step=0)
     self._applicant_updater.update(self.state, None)
 
+  def _score_transform(self, features):
+    return [feat[0] for feat in features]
+
   def reset(self):
     """Resets the environment."""
     self._state_init(self.state.rng)
@@ -631,26 +642,31 @@ class dp_selection_rate_based_lending_env(core.FairnessEnv):
   ########################这里需要大改，因为action空间变了，所以所有的update都要更改
   def _step_impl(self, state, action):
     thr_list = self.selection2thr.transform_2_thr(state, action)
-    # print(thr_list)
-    # print('thr_list:',action,thr_list)
-    reward = 0
+    reward_pre = np.linalg.norm(np.array(list(self.state.params.applicant_distribution.components[0].weights))-np.array(list(self.state.params.applicant_distribution.components[1].weights)))
+    if self.state.current_step == 0:
+      print('initial difference:', reward_pre)
     for _ in range(50):
       self._applicant_updater.update(self.state, action)
       features = self._get_features(state.applicant_features)
       score = self._score_transform([features])[0]
       if score >= thr_list[state.group_id]:
         if state.will_default:
-          reward -= 1
+          # reward -= 1
           state.bank_cash -= 1
           self._parameter_updater.update(self.state, 0)
         else:
-          reward += 1
+          # reward += 1
           state.bank_cash += 1
           self._parameter_updater.update(self.state, 1)
     self.state.current_step += 1
+    reward_post = np.linalg.norm(
+        np.array(list(self.state.params.applicant_distribution.components[0].weights)) - np.array(
+            list(self.state.params.applicant_distribution.components[1].weights)))
+    reward=reward_pre-reward_post
     if self.state.current_step == self.initial_params.max_step:
       print('bank_cash', self.state.current_step, self.state.bank_cash)
     return self.state, reward
+
 
   def step(self, action):
     if self.state is None:
@@ -666,7 +682,8 @@ class dp_selection_rate_based_lending_env(core.FairnessEnv):
     self.state, reward = self._step_impl(self.state, action)
     # print('reward',reward)
     observation = self._get_observable_state()
-
+    if self.state.current_step==self.initial_params.max_step:
+        print('observation:',observation)
     logging.debug('Observation: %s.', observation)
     logging.debug('Observation space: %s.', self.observation_space)
 
@@ -801,6 +818,9 @@ class thr_rate_based_lending_env(core.FairnessEnv):
         del observation
         feature = self.state.applicant_features
         return [np.argmax(feature)]
+
+    def _score_transform(self, features):
+        return [feat[0] for feat in features]
 
     def _get_observable_state(self):
         application_List = list(self.state.params.applicant_distribution.components[0].weights)
